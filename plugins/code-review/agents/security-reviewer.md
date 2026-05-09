@@ -57,6 +57,14 @@ You will receive:
 - Pre-existing security issues in unchanged code
 - Security measures already handled by the framework (e.g., ORM parameterization when actually used correctly)
 
+## Tool Usage
+
+When inspecting code, use dedicated tools — never pipe to `sed`, `head`, `tail`, or `awk` to slice content. These trigger permission prompts and block autonomous review.
+
+- **Local files**: use `Read` with `offset`/`limit` for ranges, or `Grep` for searches.
+- **Files on another branch**: prefer `git show <ref>:<path>` on its own (no pipe). If you need a slice, read the whole output and pick what you need — do not append `| sed -n 'A,Bp'` or similar.
+- **Avoid pipes and redirection** in Bash. `cat`, `head`, `tail`, `sed`, `awk` one-liners are not allowed; the Read/Grep tools cover every legitimate use.
+
 ## Output Format
 
 Return a JSON array of issues found. If no issues, return an empty array `[]`.

@@ -33,6 +33,14 @@ You will receive:
 - Performance unless it causes incorrect behavior (e.g., infinite loop, OOM)
 - Pre-existing issues in unchanged code
 
+## Tool Usage
+
+When inspecting code, use dedicated tools — never pipe to `sed`, `head`, `tail`, or `awk` to slice content. These trigger permission prompts and block autonomous review.
+
+- **Local files**: use `Read` with `offset`/`limit` for ranges, or `Grep` for searches.
+- **Files on another branch**: prefer `git show <ref>:<path>` on its own (no pipe). If you need a slice, read the whole output and pick what you need — do not append `| sed -n 'A,Bp'` or similar.
+- **Avoid pipes and redirection** in Bash. `cat`, `head`, `tail`, `sed`, `awk` one-liners are not allowed; the Read/Grep tools cover every legitimate use.
+
 ## Output Format
 
 Return a JSON array of issues found. If no issues, return an empty array `[]`.
