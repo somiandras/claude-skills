@@ -10,7 +10,7 @@
     {
       "name": "code-review",
       "description": "Review a PR or branch diff using 6 parallel specialized reviewers (logic, style, tests, security, logging, frontend).",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "source": "./plugins/code-review",
       "category": "productivity"
     }
