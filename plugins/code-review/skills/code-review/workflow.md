@@ -108,24 +108,6 @@ Keep the terminal summary compact — one-line issue descriptions, no suggestion
 
 If posting fails, inform the user and show the full detailed review in the terminal instead.
 
-## Step 8: Write Verdict File (ALWAYS, when reviewing a PR)
-
-When `DIFF_SOURCE` is `pr`, write the final verdict to a file so the calling
-workflow can decide whether to fail the build.
-
-- **Path**: `${RUNNER_TEMP:-/tmp}/code-review-verdict.txt`
-- **Contents**: exactly one of `REQUEST_CHANGES`, `APPROVE_WITH_SUGGESTIONS`,
-  `APPROVE` (no trailing whitespace, no extra text).
-
-Mapping:
-
-- Any CRITICAL or IMPORTANT issue → `REQUEST_CHANGES`
-- Only MINOR / NITPICK issues → `APPROVE_WITH_SUGGESTIONS`
-- No issues at all → `APPROVE`
-
-Workflows that want to fail the build on blocking issues read this file in a
-follow-up step and `exit 1` if the verdict is `REQUEST_CHANGES`.
-
 ## Rules
 
 - All agents run in parallel — never sequential

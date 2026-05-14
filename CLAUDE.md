@@ -1,33 +1,41 @@
-# claude-skills
+# CLAUDE.md
 
-Personal Claude Code marketplace. Each plugin lives under `plugins/<name>/`
-with a `.claude-plugin/plugin.json` manifest. The marketplace manifest at
-`.claude-plugin/marketplace.json` lists every plugin and its version.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Hard rule: bump version on every update
+## Repository purpose
 
-**Every change to a plugin's content MUST bump the version.** No exceptions.
+Personal Claude Code plugin marketplace. Distributes plugins via the Claude Code marketplace mechanism so the same versions run locally and in CI (GitHub Actions, Bitbucket Pipelines). No build, no tests, no runtime — just markdown + JSON manifests consumed by the Claude Code harness.
 
-Without a version bump, the plugin manager has no signal to refresh the
-local cache. Users running `/plugin update` will see "already up to date"
-even though the canonical source has changed, and the only way to apply
-the change becomes hand-editing the cache — which is unreliable and gets
-overwritten on the next legitimate update.
+## Architecture
 
-**Two files must be edited together:**
+Two-level manifest layout:
 
-1. `plugins/<name>/.claude-plugin/plugin.json` — bump `version`
-2. `.claude-plugin/marketplace.json` — bump the matching `version` entry
+- `.claude-plugin/marketplace.json` — top-level marketplace manifest. Lists each plugin with `name`, `version`, and `source` (relative path under `plugins/`). Marketplace name is `somiandras-skills`.
+- `plugins/<name>/.claude-plugin/plugin.json` — per-plugin manifest.
+- `plugins/<name>/skills/<skill>/SKILL.md` — skill entry point. Frontmatter `description` controls auto-trigger; `user-invocable: true` exposes it as `/<plugin>:<skill>`.
+- `plugins/<name>/skills/<skill>/workflow.md` — full procedure, loaded on demand from SKILL.md via `${CLAUDE_SKILL_DIR}/workflow.md`. Keeps SKILL.md cheap to scan.
+- `plugins/<name>/agents/*.md` — plugin-scoped subagents, invoked from a skill as `subagent_type: "<plugin>:<agent-name>"` (e.g. `code-review:logic-reviewer`).
 
-Both versions must agree. Use semver: patch for fixes/wording, minor for
-new features, major for breaking changes.
+The `code-review` plugin orchestrates 6 parallel reviewer subagents (logic, style, test, security, logging, frontend) from a single skill. Frontend agent is conditional on file extensions in the diff. Agents return findings; the skill consolidates, deduplicates, prints a terminal summary, and posts PR comments when reviewing a PR.
 
-After pushing, the user runs `/plugin update <name>@somiandras-skills`
-in Claude Code to repopulate the cache.
+## Versioning
 
-## Never edit the cache directly
+Bump `version` in both `.claude-plugin/marketplace.json` and the affected `plugins/*/.claude-plugin/plugin.json` together. Tag releases as `vX.Y.Z` so CI can pin via `...@vX.Y.Z`.
 
-Do **not** patch files under `~/.claude/plugins/cache/somiandras-skills/`
-as a substitute for a real release. The cache is a derived artifact —
-hand edits survive only until the next plugin manager refresh. Always
-fix the source in this repo, bump the version, push, and update.
+## Conventions when editing plugins
+
+- Skill `description` is the trigger surface — phrases users would say must appear there. Keep it dense but accurate; auto-trigger relies on it.
+- Workflow procedure goes in `workflow.md`, not SKILL.md. SKILL.md just points at it.
+- Reviewer agents have a strict scope (see each agent's "What NOT to Flag" section) — don't blur boundaries between them.
+- The orchestrator runs reviewers strictly in parallel via a single message with multiple Agent tool calls. Never make this sequential.
+- When a workflow needs to write multi-line content (PR comments, etc.), write to a temp file and pass via `--content-file`. Never use heredocs (`$(cat <<'EOF' ...)`) — they trigger security approval prompts in the harness.
+
+## Local install / update
+
+```bash
+claude plugin marketplace add https://github.com/somiandras/claude-skills.git
+claude plugin install code-review@somiandras-skills
+claude plugin marketplace update somiandras-skills
+```
+
+After installing, remove any shadowing copies under `~/.claude/skills/code-review/` and `~/.claude/agents/*-reviewer.md` — the plugin owns those.
