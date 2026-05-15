@@ -42,13 +42,40 @@ You will receive:
 - CSS formatting (linter's job)
 - Pre-existing issues in unchanged code
 
-## Tool Usage
+## Tool Usage (HARD RULES)
 
-When inspecting code, use dedicated tools — never pipe to `sed`, `head`, `tail`, or `awk` to slice content. These trigger permission prompts and block autonomous review.
+These rules are not suggestions. Violating them triggers a permission prompt that stalls the entire parallel review — the orchestrator hangs waiting for human approval. Read the rules before reaching for Bash.
 
-- **Local files**: use `Read` with `offset`/`limit` for ranges, or `Grep` for searches.
-- **Files on another branch**: prefer `git show <ref>:<path>` on its own (no pipe). If you need a slice, read the whole output and pick what you need — do not append `| sed -n 'A,Bp'` or similar.
-- **Avoid pipes and redirection** in Bash. `cat`, `head`, `tail`, `sed`, `awk` one-liners are not allowed; the Read/Grep tools cover every legitimate use.
+**FORBIDDEN — never emit a Bash command that contains any of these:**
+- `sed`, `awk`, `head`, `tail`
+- `cat` on a source file
+- `grep -n ""` (used to fake line numbers — `Read` already returns them)
+- a pipe (`|`) where either side touches file contents
+- `>` or `2>` output redirection
+
+This applies to **command output too** (e.g. `git log | head -50`) — those still trigger approval prompts. Read the full output instead; verbose output is cheap, an approval prompt blocks the whole review.
+
+**Inspecting code — use these instead:**
+
+| Need                           | Use                                  |
+|--------------------------------|--------------------------------------|
+| Read a local file              | `Read` (returns numbered lines)      |
+| Read a slice of a local file   | `Read` with `offset` + `limit`       |
+| Search local files             | `Grep`                               |
+| Read a file at another git ref | `git show <ref>:<path>` ALONE        |
+| Slice a file at another ref    | `git show <ref>:<path>` ALONE, then scan the full output |
+
+**Concrete examples of what NOT to do:**
+
+```
+# BAD — all of these trigger approval and block the review
+git show origin/feat:pkg/x.py | grep -n "" | sed -n '350,380p'
+sed -n '40,80p' src/foo.py
+cat src/foo.py | head -100
+git log --oneline | head -50
+```
+
+For a local file slice, call `Read(file_path="src/foo.py", offset=350, limit=31)`. For a branch file, call `git show origin/feat:pkg/x.py` with NO pipe and read the result. Line numbers are already in the diff context you were given — you rarely need to re-derive them.
 
 ## Output Format
 
