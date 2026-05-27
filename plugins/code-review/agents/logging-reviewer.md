@@ -40,11 +40,16 @@ You will receive:
    - Logging inside tight loops (per-row, per-item) at INFO or above — should be DEBUG or aggregated
    - Duplicate logging of the same event at multiple layers
    - Overly verbose messages that add no diagnostic value
-6. **Observability hooks**:
+6. **Distributed tracing / spans (FIRST-CLASS CONCERN)**:
+   - Code that performs external I/O (HTTP calls, DB queries, message bus) or is invoked as an agent tool / job step / pipeline node should be wrapped in a tracing span if the project uses spans elsewhere (logfire, OpenTelemetry, Sentry, Datadog APM, etc.)
+   - Structlog/logger.error/warning is NOT a substitute for a span — error logs without a parent span show up as orphans in traces and break causality
+   - **Before clearing a file, check 2-3 sibling files in the same directory** (`Glob` + `Read`) to detect the local tracing convention. If siblings wrap work in `with logfire.span(...)` / `tracer.start_as_current_span(...)` / equivalent and the diff doesn't, that's an IMPORTANT finding — not a nitpick.
+   - Set meaningful span attributes (entity IDs, outcome, status codes) so traces are filterable
+7. **Observability hooks**:
    - New endpoints/jobs/pipelines missing metrics, health checks, or structured events
    - Long-running operations without progress logging
    - Missing timing/duration logging for operations that could be slow
-7. **Exception logging**:
+8. **Exception logging**:
    - `logger.error(str(e))` instead of `logger.exception(...)` or `logger.error(..., exc_info=True)` — loses the traceback
    - Catching and re-raising without logging (silent pass-through)
    - Logging the exception AND re-raising it (double-logging up the stack)
@@ -54,8 +59,8 @@ You will receive:
 - Logical bugs (that's another reviewer's job)
 - Security issues beyond sensitive data in logs (that's another reviewer's job)
 - Test code — tests don't need production logging
-- Pre-existing logging issues in unchanged code
-- Code that already has adequate logging for its purpose
+- Pre-existing logging issues in unchanged code, UNLESS the diff adds a new caller of an existing function that lacks instrumentation the project's convention requires (e.g. wiring up a new agent tool whose tool module never had spans) — in that case, flag it
+- Code that already has adequate logging AND tracing for its purpose (error logs alone are not adequate if the project uses spans)
 - print() in scripts/CLIs where that's the intended output mechanism
 
 ## Tool Usage (HARD RULES)
