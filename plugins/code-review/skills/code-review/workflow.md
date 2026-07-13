@@ -11,7 +11,7 @@ Parse the user's input to determine what to review:
 
 If the diff is empty, stop and tell the user.
 
-Record `DIFF_SOURCE` (pr/branch/local) and `PR_REF` (if applicable).
+Record `DIFF_SOURCE` (pr/branch/local), `PR_REF` (if applicable), and `REPO_ROOT` — the absolute path to the repository being reviewed. Every path you later hand to an agent must live under `REPO_ROOT`.
 
 ## Step 2: Gather Context (parallel)
 
@@ -27,7 +27,18 @@ Exclude: `*.config.{js,ts}`, files under `migrations/`, `scripts/`, `cli/`, `ser
 
 ## Step 4: Launch Review Agents (parallel)
 
-Launch all agents simultaneously using the Agent tool. Each receives: full diff, change description, CLAUDE.md paths to read.
+Launch all agents simultaneously using the Agent tool. Each agent's prompt MUST spell out the following explicitly — never make a reviewer hunt for a file:
+
+- **`REPO_ROOT`** — the absolute path to the repository under review.
+- **The full diff** (path to the saved diff file, or inline) and the change description / intent.
+- **Specific code pointers — resolved to absolute paths, never vague names.** This is mandatory:
+  - List every substantive changed source file by absolute path, and distinguish reviewable code from bulk data / generated / deleted files so agents spend effort where it matters.
+  - For any *cross-reference* you ask a reviewer to consult, give the exact path. E.g. if you want the security agent to compare against how the API validates a token, hand it `REPO_ROOT/apps/api/.../auth.ts` — NOT "the api app". If you don't know the exact path, locate it yourself (search scoped to `REPO_ROOT`) BEFORE launching, and pass the resolved path.
+  - Relevant CLAUDE.md paths (root + any in touched directories).
+- **Search-scoping rule — paste this verbatim into every agent prompt:**
+  > Root ALL file searches (grep, glob, find) at `REPO_ROOT`. NEVER search from `$HOME`, `~`, `/`, or any home-rooted path — this is forbidden. Use absolute paths under `REPO_ROOT`. If a referenced file isn't where expected, report that in your findings rather than widening the search outside the repo.
+
+A bare feature name ("the auth module", "the api app") is never acceptable — resolve it to a path first. Vague references are what cause agents to fall back to broad, home-rooted searches.
 
 **Always launch:**
 
@@ -115,3 +126,4 @@ If posting fails, inform the user and show the full detailed review in the termi
 - Source-agnostic — adapt to whatever VCS/platform the project uses
 - Don't second-guess agent findings — consolidate and present as-is
 - Large diffs (> 2000 lines): warn the user and suggest smaller PRs
+- Every agent prompt carries resolved, absolute code pointers and the search-scoping rule — no vague references, no home-rooted searches
