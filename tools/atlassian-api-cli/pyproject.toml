@@ -1,0 +1,26 @@
+[project]
+name = "atlassian-api-cli"
+version = "0.1.0"
+description = "Atlassian API CLI for Jira and Bitbucket operations"
+requires-python = ">=3.12"
+dependencies = [
+    "atlassian-python-api>=4.0.7",
+    "click>=8.0",
+    "pydantic>=2.0",
+    "pyyaml>=6.0",
+    "requests>=2.31",
+    "typer>=0.12",
+    "rich>=13.0",
+]
+
+[project.scripts]
+atlassian-api = "atlassian_api_cli.cli:app"
+jira-api = "atlassian_api_cli.cli:jira_app"
+bitbucket-api = "atlassian_api_cli.cli:bitbucket_app"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["atlassian_api_cli"]

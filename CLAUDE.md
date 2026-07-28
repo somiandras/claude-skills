@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository purpose
 
-Personal Claude Code plugin marketplace. Distributes plugins via the Claude Code marketplace mechanism so the same versions run locally and in CI (GitHub Actions, Bitbucket Pipelines). No build, no tests, no runtime — just markdown + JSON manifests consumed by the Claude Code harness.
+Personal Claude Code plugin marketplace. Distributes plugins via the Claude Code marketplace mechanism so the same versions run locally and in CI (GitHub Actions, Bitbucket Pipelines). The `plugins/` tree is pure markdown + JSON manifests consumed by the harness — no build, no tests, no runtime.
+
+The `tools/` tree is separate: standalone CLIs (Python `uv` projects) that some skills depend on at runtime. They are **not** distributed via the marketplace — a skill declares its tool as a dependency and the tool is installed independently (`uv tool install tools/<name>`). The marketplace only scans `plugins/`, so this keeps the plugin distribution markdown-pure.
 
 ## Architecture
 
@@ -15,6 +17,7 @@ Two-level manifest layout:
 - `plugins/<name>/skills/<skill>/SKILL.md` — skill entry point. Frontmatter `description` controls auto-trigger; `user-invocable: true` exposes it as `/<plugin>:<skill>`.
 - `plugins/<name>/skills/<skill>/workflow.md` — full procedure, loaded on demand from SKILL.md via `${CLAUDE_SKILL_DIR}/workflow.md`. Keeps SKILL.md cheap to scan.
 - `plugins/<name>/agents/*.md` — plugin-scoped subagents, invoked from a skill as `subagent_type: "<plugin>:<agent-name>"` (e.g. `code-review:logic-reviewer`).
+- `tools/<name>/` — standalone CLI projects (Python `uv`) that skills depend on at runtime. Installed via `uv tool install`, not distributed by the marketplace. E.g. `tools/atlassian-api-cli` provides `jira-api`/`bitbucket-api` for the `atlassian-manager` skill.
 
 The `code-review` plugin orchestrates 6 parallel reviewer subagents (logic, style, test, security, logging, frontend) from a single skill. Frontend agent is conditional on file extensions in the diff. Agents return findings; the skill consolidates, deduplicates, prints a terminal summary, and posts PR comments when reviewing a PR.
 

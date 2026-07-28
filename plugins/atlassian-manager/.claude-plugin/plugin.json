@@ -1,0 +1,8 @@
+{
+  "name": "atlassian-manager",
+  "version": "0.1.0",
+  "description": "Manage Jira issues and Bitbucket pull requests via the jira-api/bitbucket-api CLIs (config-driven, multi-org). Requires the atlassian-api-cli tool.",
+  "author": {
+    "name": "András Somi"
+  }
+}
