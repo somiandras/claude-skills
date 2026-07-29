@@ -1,6 +1,6 @@
 [project]
 name = "atlassian-api-cli"
-version = "0.1.0"
+version = "0.1.1"
 description = "Atlassian API CLI for Jira and Bitbucket operations"
 requires-python = ">=3.12"
 dependencies = [
