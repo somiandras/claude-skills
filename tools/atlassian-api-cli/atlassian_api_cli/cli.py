@@ -23,7 +23,7 @@ from atlassian_api_cli.config import (
     config_path,
     load_config,
 )
-from atlassian_api_cli.jira_api import JiraAPI, JiraAttachment, get_project_key
+from atlassian_api_cli.jira_api import JiraAPI, JiraAttachment, JiraUser, get_project_key
 
 app = typer.Typer(
     help="Atlassian API CLI for Jira and Bitbucket operations", no_args_is_help=True
@@ -143,6 +143,36 @@ def _jira(org: OrgConfig) -> JiraAPI:
 
 def _bb(org: OrgConfig) -> BitbucketAPI:
     return BitbucketAPI(workspace=org.bitbucket_workspace)
+
+
+# An Atlassian cloud accountId is a 24-char hex string or a "<realm>:<uuid>"
+# form. Anything else (a name or email) is treated as a user search query.
+_ACCOUNT_ID_RE = re.compile(r"^(?:[0-9a-fA-F]{24}|[0-9a-z]+:[0-9a-f-]+)$")
+
+
+def _resolve_assignee(jira: JiraAPI, value: str) -> str:
+    """Resolve an --assignee value to an account ID.
+
+    Accepts a raw account ID (passed through), ``me``/``@me`` for the token
+    owner, or a display-name / email that must match exactly one user.
+    """
+    if value.lower() in ("me", "@me"):
+        return jira.myself().account_id
+    if _ACCOUNT_ID_RE.match(value):
+        return value
+    matches = jira.find_users(value)
+    if not matches:
+        console.print(f"[red]No Jira user matches '{value}'.[/red]")
+        raise typer.Exit(1)
+    if len(matches) > 1:
+        console.print(
+            f"[red]'{value}' matches {len(matches)} users — "
+            "narrow it down or pass an account ID:[/red]"
+        )
+        for u in matches:
+            console.print(f"  {u.account_id}  {u.display_name}  {u.email or ''}")
+        raise typer.Exit(1)
+    return matches[0].account_id
 
 
 # === Jira Commands ===
@@ -644,7 +674,10 @@ def jira_create_issue(
         str | None, typer.Option("--description", "-d", help="Issue description")
     ] = None,
     assignee: Annotated[
-        str | None, typer.Option("--assignee", "-a", help="Assignee account ID")
+        str | None,
+        typer.Option(
+            "--assignee", "-a", help="Assignee: account ID, 'me', name, or email"
+        ),
     ] = None,
     labels: Annotated[
         str | None,
@@ -664,7 +697,7 @@ def jira_create_issue(
         issue_type=issue_type,
         summary=summary,
         description=description,
-        assignee_account_id=assignee,
+        assignee_account_id=_resolve_assignee(jira, assignee) if assignee else None,
         labels=label_list,
         parent_key=parent,
     )
@@ -687,7 +720,10 @@ def jira_update_issue(
         ),
     ] = None,
     assignee: Annotated[
-        str | None, typer.Option("--assignee", "-a", help="Assignee account ID")
+        str | None,
+        typer.Option(
+            "--assignee", "-a", help="Assignee: account ID, 'me', name, or email"
+        ),
     ] = None,
     priority: Annotated[
         str | None,
@@ -696,6 +732,7 @@ def jira_update_issue(
 ) -> None:
     """Update an existing issue's fields."""
     fields: dict[str, Any] = {}
+    jira = _jira(_resolve_prefix(get_project_key(issue_key)))
 
     if summary is not None:
         fields["summary"] = summary
@@ -704,7 +741,7 @@ def jira_update_issue(
     if labels is not None:
         fields["labels"] = [lbl.strip() for lbl in labels.split(",") if lbl.strip()]
     if assignee is not None:
-        fields["assignee"] = {"accountId": assignee}
+        fields["assignee"] = {"accountId": _resolve_assignee(jira, assignee)}
     if priority is not None:
         fields["priority"] = {"name": priority}
 
@@ -714,11 +751,42 @@ def jira_update_issue(
         )
         raise typer.Exit(1)
 
-    jira = _jira(_resolve_prefix(get_project_key(issue_key)))
     jira.update_issue(issue_key, fields)
 
     updated = ", ".join(fields.keys())
     console.print(f"[green]✓[/green] Updated {issue_key}: {updated}")
+
+
+def _print_users_table(title: str, users: list[JiraUser]) -> None:
+    """Print a table of Jira users."""
+    table = Table(title=title)
+    table.add_column("Account ID", style="cyan")
+    table.add_column("Name", style="white")
+    table.add_column("Email", style="blue")
+    table.add_column("Active", style="dim")
+    for u in users:
+        table.add_row(u.account_id, u.display_name, u.email or "-", str(u.active))
+    console.print(table)
+
+
+@jira_app.command("whoami")
+def jira_whoami() -> None:
+    """Show the account behind the API token (use its ID to assign to me)."""
+    jira = _jira(_resolve_context())
+    _print_users_table("Current User", [jira.myself()])
+
+
+@jira_app.command("find-user")
+def jira_find_user(
+    query: Annotated[str, typer.Argument(help="Display name or email to search")],
+) -> None:
+    """Resolve a display name or email to Jira account ID(s)."""
+    jira = _jira(_resolve_context())
+    users = jira.find_users(query)
+    if not users:
+        console.print(f"[yellow]No user matches '{query}'.[/yellow]")
+        raise typer.Exit(1)
+    _print_users_table(f"Users matching '{query}'", users)
 
 
 # === Bitbucket Commands ===

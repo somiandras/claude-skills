@@ -76,6 +76,12 @@ jira-api create-issue "Title" --project COL --type Feature
 # Update
 jira-api update DA-1234 --summary "..." --description "..." --labels "..." --assignee "..." --priority "High"
 
+# Assignees — no external lookup needed (token needs the read:jira-user scope)
+jira-api whoami                            # Your account ID (for "assign to me")
+jira-api find-user "Andras Somi"           # Resolve a name/email to account ID(s)
+jira-api update DA-1234 --assignee me       # Assign to the token owner (you)
+jira-api update DA-1234 --assignee "jane@example.com"  # Name/email → resolved to account ID
+
 # Comments
 jira-api comment DA-1234 "Comment text"
 jira-api comments DA-1234

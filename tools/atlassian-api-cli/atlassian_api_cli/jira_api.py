@@ -7,6 +7,10 @@ Environment variables required:
     ATLASSIAN_EMAIL: Your Atlassian account email
     JIRA_API_TOKEN: Scoped API token from https://id.atlassian.com/manage-profile/security/api-tokens
 
+The token must include the read:jira-user scope for myself()/find_users()
+(and thus `--assignee me` / name resolution). Without it those user-directory
+endpoints return 401 while issue operations still work.
+
 Usage:
     from atlassian_api_cli import JiraAPI
 
@@ -70,6 +74,15 @@ class JiraAttachment(BaseModel):
     content_url: str
     created: str | None = None
     author: str | None = None
+
+
+class JiraUser(BaseModel):
+    """Represents a Jira user."""
+
+    account_id: str
+    display_name: str
+    email: str | None = None
+    active: bool = True
 
 
 class JiraIssue(BaseModel):
@@ -178,6 +191,48 @@ class JiraAPI:
             ],
             raw=result,
         )
+
+    def myself(self) -> JiraUser:
+        """Return the authenticated user (the API token's owner).
+
+        Use this to resolve "assign to me" without an external lookup.
+
+        Returns:
+            JiraUser for the token owner.
+        """
+        result = self._client.myself()
+        if result is None:
+            raise ValueError("Could not fetch current user")
+        return JiraUser(
+            account_id=result["accountId"],
+            display_name=result.get("displayName", ""),
+            email=result.get("emailAddress"),
+            active=result.get("active", True),
+        )
+
+    def find_users(self, query: str) -> list[JiraUser]:
+        """Fuzzy-search users by display name or email address.
+
+        Args:
+            query: String matched against displayName and emailAddress.
+
+        Returns:
+            List of matching JiraUser objects (may be empty).
+        """
+        result = self._client.user_find_by_user_string(query=query)
+        # On error the client returns an explanatory string instead of a list.
+        if not isinstance(result, list):
+            raise ValueError(str(result))
+        return [
+            JiraUser(
+                account_id=u["accountId"],
+                display_name=u.get("displayName", ""),
+                email=u.get("emailAddress"),
+                active=u.get("active", True),
+            )
+            for u in result
+            if isinstance(u, dict)
+        ]
 
     def search_issues(
         self,
