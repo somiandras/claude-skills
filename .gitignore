@@ -3,6 +3,10 @@
 .vscode/
 .idea/
 
+# Environment / secrets
+.env
+.envrc
+
 # Python tools (tools/*)
 .venv/
 __pycache__/
