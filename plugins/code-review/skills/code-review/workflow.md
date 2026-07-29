@@ -116,6 +116,7 @@ Keep the terminal summary compact — one-line issue descriptions, no suggestion
    bitbucket-api comment <repo> <pr_id> --content-file /tmp/pr_comment.md
    ```
    **NEVER use `$(cat <<'EOF' ...)` heredocs** — they trigger security approval prompts.
+   **Pass a fully-resolved absolute path to `--content-file` — never a shell variable** (e.g. write `/home/job/tmp/pr_comment.md`, not `$CLAUDE_JOB_DIR/tmp/pr_comment.md`). The harness flags variable expansion as a security concern and forces an approval prompt, defeating any `bitbucket-api` allowlist rule. If your scratchpad path is given as a variable, resolve it to its literal value before building the command.
 
 If posting fails, inform the user and show the full detailed review in the terminal instead.
 
