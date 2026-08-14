@@ -1,6 +1,7 @@
 ---
 name: atlassian-manager
 description: Manage Jira issues and Bitbucket pull requests using REST API CLIs. Use for fetching tickets, transitioning issues, creating/merging PRs, or any Atlassian operations.
+model: sonnet
 ---
 
 # Atlassian Manager Skill
