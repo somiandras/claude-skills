@@ -26,9 +26,55 @@ from typing import Any
 from atlassian import Jira
 from pydantic import BaseModel
 
+
 def get_project_key(issue_key: str) -> str:
     """Extract project key from issue key (e.g., 'DA-1234' → 'DA')."""
     return issue_key.split("-")[0].upper()
+
+
+def _parse_parent(fields_data: dict[str, Any]) -> "JiraParent | None":
+    """Extract the parent (epic or parent task) from an issue's fields."""
+    parent = fields_data.get("parent")
+    if not parent:
+        return None
+    parent_fields = parent.get("fields", {})
+    return JiraParent(
+        key=parent["key"],
+        summary=parent_fields.get("summary"),
+        status=parent_fields.get("status", {}).get("name") or None,
+        issue_type=parent_fields.get("issuetype", {}).get("name") or None,
+    )
+
+
+def _parse_issue_links(fields_data: dict[str, Any]) -> "list[JiraIssueLink]":
+    """Extract linked issues from an issue's fields.
+
+    Each Jira link names the related issue on exactly one side (inwardIssue or
+    outwardIssue); the human-readable relationship comes from the matching side
+    of the link type (inward/outward).
+    """
+    links: list[JiraIssueLink] = []
+    for link in fields_data.get("issuelinks", []):
+        link_type = link.get("type", {})
+        if "outwardIssue" in link:
+            related = link["outwardIssue"]
+            relationship = link_type.get("outward", "relates to")
+        elif "inwardIssue" in link:
+            related = link["inwardIssue"]
+            relationship = link_type.get("inward", "relates to")
+        else:
+            continue
+        related_fields = related.get("fields", {})
+        links.append(
+            JiraIssueLink(
+                id=str(link.get("id", "")),
+                relationship=relationship,
+                key=related["key"],
+                summary=related_fields.get("summary"),
+                status=related_fields.get("status", {}).get("name") or None,
+            )
+        )
+    return links
 
 
 class JiraTransition(BaseModel):
@@ -85,6 +131,25 @@ class JiraUser(BaseModel):
     active: bool = True
 
 
+class JiraParent(BaseModel):
+    """Represents an issue's parent (epic or parent task/subtask)."""
+
+    key: str
+    summary: str | None = None
+    status: str | None = None
+    issue_type: str | None = None
+
+
+class JiraIssueLink(BaseModel):
+    """Represents a link from an issue to another issue."""
+
+    id: str
+    relationship: str
+    key: str
+    summary: str | None = None
+    status: str | None = None
+
+
 class JiraIssue(BaseModel):
     """Represents a Jira issue."""
 
@@ -99,6 +164,8 @@ class JiraIssue(BaseModel):
     created: str | None = None
     updated: str | None = None
     labels: list[str] = []
+    parent: JiraParent | None = None
+    links: list[JiraIssueLink] = []
     attachments: list[JiraAttachment] = []
     raw: dict[str, Any] | None = None
 
@@ -153,7 +220,7 @@ class JiraAPI:
         """
         # Default fields if none specified
         if fields is None:
-            fields = "summary,status,issuetype,priority,description,assignee,reporter,created,updated,labels,attachment"
+            fields = "summary,status,issuetype,priority,description,assignee,reporter,created,updated,labels,parent,issuelinks,attachment"
         result = self._client.issue(issue_key, fields=fields)
         if result is None:
             raise ValueError(f"Issue {issue_key} not found")
@@ -177,6 +244,8 @@ class JiraAPI:
             created=fields_data.get("created"),
             updated=fields_data.get("updated"),
             labels=fields_data.get("labels", []),
+            parent=_parse_parent(fields_data),
+            links=_parse_issue_links(fields_data),
             attachments=[
                 JiraAttachment(
                     id=str(a["id"]),
@@ -222,7 +291,7 @@ class JiraAPI:
         result = self._client.user_find_by_user_string(query=query)
         # On error the client returns an explanatory string instead of a list.
         if not isinstance(result, list):
-            raise ValueError(str(result))
+            raise TypeError(str(result))
         return [
             JiraUser(
                 account_id=u["accountId"],

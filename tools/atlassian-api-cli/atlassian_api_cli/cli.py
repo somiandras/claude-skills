@@ -23,7 +23,13 @@ from atlassian_api_cli.config import (
     config_path,
     load_config,
 )
-from atlassian_api_cli.jira_api import JiraAPI, JiraAttachment, JiraUser, get_project_key
+from atlassian_api_cli.jira_api import (
+    JiraAPI,
+    JiraAttachment,
+    JiraIssueLink,
+    JiraUser,
+    get_project_key,
+)
 
 app = typer.Typer(
     help="Atlassian API CLI for Jira and Bitbucket operations", no_args_is_help=True
@@ -200,15 +206,30 @@ def jira_get_issue(
     table.add_row("Type", issue.issue_type)
     table.add_row("Priority", issue.priority or "-")
     table.add_row("Assignee", issue.assignee or "-")
+    if issue.parent:
+        parent = issue.parent
+        parent_meta = ", ".join(m for m in (parent.issue_type, parent.status) if m)
+        table.add_row(
+            "Parent",
+            f"{parent.key} — {parent.summary or '?'}"
+            + (f" ({parent_meta})" if parent_meta else ""),
+        )
     table.add_row("Labels", ", ".join(issue.labels) if issue.labels else "-")
     table.add_row("Created", issue.created or "-")
     table.add_row("Updated", issue.updated or "-")
+    table.add_row(
+        "Links",
+        str(len(issue.links)) if issue.links else "-",
+    )
     table.add_row(
         "Attachments",
         str(len(issue.attachments)) if issue.attachments else "-",
     )
 
     console.print(table)
+
+    if issue.links:
+        _print_links_table(issue.links)
 
     if issue.attachments:
         _print_attachments_table(issue.attachments)
@@ -225,6 +246,27 @@ def _format_size(size_bytes: int) -> str:
     if size_bytes < 1024 * 1024:
         return f"{size_bytes / 1024:.1f} KB"
     return f"{size_bytes / (1024 * 1024):.1f} MB"
+
+
+def _print_links_table(links: list[JiraIssueLink]) -> None:
+    """Print a table of linked issues."""
+    link_table = Table(title="Linked Issues")
+    link_table.add_column("Link ID", style="dim")
+    link_table.add_column("Relationship", style="magenta")
+    link_table.add_column("Key", style="cyan")
+    link_table.add_column("Status", style="blue")
+    link_table.add_column("Summary", style="white")
+
+    for link in links:
+        link_table.add_row(
+            link.id,
+            link.relationship,
+            link.key,
+            link.status or "-",
+            link.summary or "-",
+        )
+
+    console.print(link_table)
 
 
 def _print_attachments_table(attachments: list[JiraAttachment]) -> None:

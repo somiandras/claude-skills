@@ -54,7 +54,7 @@ Repo slugs ≠ local folder names: `pipeline` → `data-importer`, `analytics_ag
 
 ```bash
 # Get / Search
-jira-api get DA-1234
+jira-api get DA-1234                       # Shows parent, linked issues (with link IDs), attachments
 jira-api search "project=DA AND status='In Progress'"
 jira-api search "project=DA AND sprint in openSprints()" --limit 10
 
