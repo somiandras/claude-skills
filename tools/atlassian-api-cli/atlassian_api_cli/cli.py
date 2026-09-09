@@ -928,6 +928,13 @@ def bitbucket_create_pr(
     description: Annotated[
         str | None, typer.Option("--description", help="PR description")
     ] = None,
+    description_file: Annotated[
+        Path | None,
+        typer.Option(
+            "--description-file",
+            help="Read PR description from a file (avoids shell newline escaping)",
+        ),
+    ] = None,
     no_close: Annotated[
         bool, typer.Option("--no-close", help="Don't close source branch on merge")
     ] = False,
@@ -938,9 +945,22 @@ def bitbucket_create_pr(
 ) -> None:
     """Create a new pull request.
 
+    Prefer --description-file for multi-line descriptions: passing newlines
+    inline via the shell tends to leave literal backslash-n in the rendered PR.
+
     Automatically transitions linked JIRA ticket (extracted from branch name
     or title) to Review status unless --no-transition is specified.
     """
+    if description is not None and description_file is not None:
+        console.print(
+            "[red]Error:[/red] Provide either --description or --description-file, not both"
+        )
+        raise typer.Exit(1)
+
+    pr_description = (
+        description_file.read_text() if description_file is not None else description
+    )
+
     org = _resolve_repo(repo)
 
     if dest is None:
@@ -957,7 +977,7 @@ def bitbucket_create_pr(
         source_branch=source,
         destination_branch=dest,
         title=title,
-        description=description,
+        description=pr_description,
         close_source_branch=not no_close,
     )
 

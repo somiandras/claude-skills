@@ -118,8 +118,11 @@ bitbucket-api diff data-importer 123 -o /tmp/pr-123.diff
 
 # Create PR (auto-transitions linked JIRA ticket to Review).
 # --dest is optional: defaults to the repo's configured dest branch.
+# For a multi-line description, write the body to a file and use --description-file —
+# inline newlines render as literal \n in the PR otherwise. This sets the full
+# description at creation time, so no follow-up update-pr round is needed.
 bitbucket-api create-pr data-importer feature/DA-1234-add-feature "DA-1234: Add feature" \
-    --description "## Summary\n- Changes\n\n## JIRA\nDA-1234"
+    --description-file /tmp/pr-body.md
 bitbucket-api create-pr advisor-portal feature/AP-1234-add "AP-1234: Add feature"   # dest develop from config
 bitbucket-api create-pr data-importer feature/DA-1234-fix "Fix" --dest master --no-transition
 
