@@ -133,9 +133,10 @@ bitbucket-api update-pr data-importer 123 --description "## Summary\nSingle-line
 # newlines render as literal \n in the PR otherwise.
 bitbucket-api update-pr data-importer 123 --description-file /tmp/pr-body.md
 
-# Merge
+# Merge (deletes the source branch by default; --no-close keeps it)
 bitbucket-api merge data-importer 123
 bitbucket-api merge data-importer 123 --strategy squash
+bitbucket-api merge data-importer 123 --no-close
 
 # Comments
 bitbucket-api comment data-importer 123 "Comment text"

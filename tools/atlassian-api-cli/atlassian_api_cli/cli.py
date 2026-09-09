@@ -1087,10 +1087,23 @@ def bitbucket_merge_pr(
     message: Annotated[
         str | None, typer.Option("--message", "-m", help="Merge commit message")
     ] = None,
+    no_close: Annotated[
+        bool,
+        typer.Option("--no-close", help="Keep the source branch instead of deleting it on merge"),
+    ] = False,
 ) -> None:
-    """Merge a pull request."""
+    """Merge a pull request.
+
+    By default the source branch is deleted on merge; pass --no-close to keep it.
+    """
     bb = _bb(_resolve_repo(repo))
-    pr = bb.merge_pull_request(repo, pr_id, merge_strategy=strategy, message=message)
+    pr = bb.merge_pull_request(
+        repo,
+        pr_id,
+        merge_strategy=strategy,
+        message=message,
+        close_source_branch=not no_close,
+    )
     console.print(f"[green]✓[/green] Merged PR #{pr.id}: {pr.title}")
 
 
