@@ -1137,13 +1137,32 @@ def bitbucket_inline_comment(
     pr_id: Annotated[int, typer.Argument(help="Pull request ID")],
     content: Annotated[str | None, typer.Argument(help="Comment content")] = None,
     file: Annotated[str, typer.Option("--file", "-f", help="File path in the diff")] = "",
-    line: Annotated[int, typer.Option("--line", "-l", help="Line number in the diff")] = 0,
+    line: Annotated[
+        int,
+        typer.Option(
+            "--line",
+            "-l",
+            help="Destination-side line number (post-change file). Use for added or context lines.",
+        ),
+    ] = 0,
+    old_line: Annotated[
+        int,
+        typer.Option(
+            "--old-line",
+            help="Source-side line number (pre-change file). Use for removed lines.",
+        ),
+    ] = 0,
     content_file: Annotated[
         Path | None,
         typer.Option("--content-file", "-c", help="Read comment content from file"),
     ] = None,
 ) -> None:
-    """Add an inline comment on a specific file/line in a PR diff."""
+    """Add an inline comment on a specific file/line in a PR diff.
+
+    Bitbucket anchors comments on two sides of the diff: --line targets the
+    destination (post-change) file, --old-line the source (pre-change) file.
+    Pass both to anchor a comment on a changed line.
+    """
     if content_file:
         body = content_file.read_text()
     elif content:
@@ -1151,11 +1170,22 @@ def bitbucket_inline_comment(
     else:
         console.print("[red]Error:[/red] Provide content as argument or via --content-file")
         raise typer.Exit(1)
+    if not line and not old_line:
+        console.print("[red]Error:[/red] Provide --line, --old-line, or both")
+        raise typer.Exit(1)
     bb = _bb(_resolve_repo(repo))
-    result = bb.add_inline_comment(repo, pr_id, body, file_path=file, line=line)
+    result = bb.add_inline_comment(
+        repo,
+        pr_id,
+        body,
+        file_path=file,
+        line=line or None,
+        old_line=old_line or None,
+    )
     comment_id = result.get("id", "?")
+    loc = f"{file}:{line}" if line else f"{file}:from{old_line}"
     console.print(
-        f"[green]✓[/green] Added inline comment #{comment_id} on {file}:{line} in PR #{pr_id}"
+        f"[green]✓[/green] Added inline comment #{comment_id} on {loc} in PR #{pr_id}"
     )
 
 

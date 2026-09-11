@@ -141,6 +141,8 @@ bitbucket-api merge data-importer 123 --no-close
 # Comments
 bitbucket-api comment data-importer 123 "Comment text"
 bitbucket-api inline-comment data-importer 123 "Needs null check" --file src/utils.py --line 42
+# --line is the destination-side (post-change) line — use for added/context lines.
+# For a removed line, use --old-line (source side). Pass both for a changed line.
 bitbucket-api reply-comment data-importer 123 456 "Fixed"
 bitbucket-api comments data-importer 123              # All comments
 bitbucket-api comments data-importer 123 --active     # Unresolved only

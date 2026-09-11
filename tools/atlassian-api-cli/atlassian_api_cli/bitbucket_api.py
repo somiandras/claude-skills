@@ -102,7 +102,17 @@ class BitbucketAPI:
             json=json_data,
             timeout=30,
         )
-        response.raise_for_status()
+        try:
+            response.raise_for_status()
+        except requests.HTTPError as exc:
+            # Surface Bitbucket's own error body — raise_for_status alone drops it,
+            # leaving only a bare status line.
+            body = response.text.strip()
+            if body:
+                raise requests.HTTPError(
+                    f"{exc}\nBitbucket response: {body}", response=response
+                ) from exc
+            raise
         if response.status_code == 204:
             return {}
         return response.json()
@@ -327,26 +337,45 @@ class BitbucketAPI:
         pr_id: int,
         content: str,
         file_path: str,
-        line: int,
+        line: int | None = None,
+        old_line: int | None = None,
     ) -> dict[str, Any]:
         """Add an inline comment on a specific file/line in a pull request diff.
+
+        Bitbucket anchors inline comments in two coordinate systems: ``to`` is a
+        line in the destination (post-change) file, ``from`` a line in the source
+        (pre-change) file. Added lines exist only on the destination side, removed
+        lines only on the source side; a comment spanning a changed line may carry
+        both.
 
         Args:
             repo_slug: Repository slug.
             pr_id: Pull request ID.
             content: Comment content (Markdown).
             file_path: Path to the file relative to repo root.
-            line: Line number in the diff to comment on.
+            line: Destination-side line number (``to``). Use for added or context
+                lines.
+            old_line: Source-side line number (``from``). Use for removed lines.
 
         Returns:
             Created comment data.
+
+        Raises:
+            ValueError: If neither ``line`` nor ``old_line`` is given.
         """
+        if line is None and old_line is None:
+            raise ValueError("Provide line, old_line, or both.")
+        inline: dict[str, Any] = {"path": file_path}
+        if line is not None:
+            inline["to"] = line
+        if old_line is not None:
+            inline["from"] = old_line
         path = (
             f"/repositories/{self.workspace}/{repo_slug}/pullrequests/{pr_id}/comments"
         )
         data: dict[str, Any] = {
             "content": {"raw": content},
-            "inline": {"path": file_path, "from": line},
+            "inline": inline,
         }
         return self._request("POST", path, json_data=data)
 
