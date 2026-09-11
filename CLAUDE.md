@@ -25,6 +25,10 @@ The `code-review` plugin orchestrates 6 parallel reviewer subagents (logic, styl
 
 Bump `version` in both `.claude-plugin/marketplace.json` and the affected `plugins/*/.claude-plugin/plugin.json` together. Tag releases as `vX.Y.Z` so CI can pin via `...@vX.Y.Z`.
 
+## Issue tracking
+
+This repo uses **kata** (not JIRA — JIRA is Collective-only). The workspace is bound via the committed `.kata.toml` (`kata init` already run). Track outstanding work as kata issues: `kata create "<title>" --body "..."`, `kata list`, `kata ready`, `kata show <id>`, `kata close <id>`. Per-machine overrides live in the gitignored `.kata.local.toml`.
+
 ## Conventions when editing plugins
 
 - Skill `description` is the trigger surface — phrases users would say must appear there. Keep it dense but accurate; auto-trigger relies on it.
