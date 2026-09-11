@@ -23,7 +23,7 @@ The `code-review` plugin orchestrates 6 parallel reviewer subagents (logic, styl
 
 ## Versioning
 
-Bump `version` in both `.claude-plugin/marketplace.json` and the affected `plugins/*/.claude-plugin/plugin.json` together. Tag releases as `vX.Y.Z` so CI can pin via `...@vX.Y.Z`.
+Bump `version` in both `.claude-plugin/marketplace.json` and the affected `plugins/*/.claude-plugin/plugin.json` together. Installs track `main` via `claude plugin marketplace update`, so a push is the release — no tagging step.
 
 ## Issue tracking
 
