@@ -102,20 +102,27 @@ class BitbucketAPI:
             json=json_data,
             timeout=30,
         )
+        self._raise_for_status(response)
+        if response.status_code == 204:
+            return {}
+        return response.json()
+
+    @staticmethod
+    def _raise_for_status(response: requests.Response) -> None:
+        """raise_for_status, but surface Bitbucket's error body.
+
+        A bare ``raise_for_status`` drops the response body, leaving only a
+        status line — which hides Bitbucket's own explanation of the failure.
+        """
         try:
             response.raise_for_status()
         except requests.HTTPError as exc:
-            # Surface Bitbucket's own error body — raise_for_status alone drops it,
-            # leaving only a bare status line.
             body = response.text.strip()
             if body:
                 raise requests.HTTPError(
                     f"{exc}\nBitbucket response: {body}", response=response
                 ) from exc
             raise
-        if response.status_code == 204:
-            return {}
-        return response.json()
 
     def list_pull_requests(
         self,
@@ -171,7 +178,7 @@ class BitbucketAPI:
             auth=self.auth,
             timeout=30,
         )
-        response.raise_for_status()
+        self._raise_for_status(response)
         return response.text
 
     def create_pull_request(
