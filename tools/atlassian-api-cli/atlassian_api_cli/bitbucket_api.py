@@ -317,6 +317,36 @@ class BitbucketAPI:
         result = self._request("POST", path)
         return self._parse_pr(result)
 
+    def approve_pull_request(self, repo_slug: str, pr_id: int) -> dict[str, Any]:
+        """Approve a pull request.
+
+        Signals the PR is good to merge without merging it. The endpoint
+        returns a participant object describing the approval, not the PR.
+
+        Args:
+            repo_slug: Repository slug.
+            pr_id: Pull request ID.
+
+        Returns:
+            Participant data for the approval.
+        """
+        path = (
+            f"/repositories/{self.workspace}/{repo_slug}/pullrequests/{pr_id}/approve"
+        )
+        return self._request("POST", path)
+
+    def unapprove_pull_request(self, repo_slug: str, pr_id: int) -> None:
+        """Remove your approval from a pull request.
+
+        Args:
+            repo_slug: Repository slug.
+            pr_id: Pull request ID.
+        """
+        path = (
+            f"/repositories/{self.workspace}/{repo_slug}/pullrequests/{pr_id}/approve"
+        )
+        self._request("DELETE", path)
+
     def add_pr_comment(
         self,
         repo_slug: str,

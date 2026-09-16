@@ -1107,6 +1107,28 @@ def bitbucket_merge_pr(
     console.print(f"[green]✓[/green] Merged PR #{pr.id}: {pr.title}")
 
 
+@bitbucket_app.command("approve")
+def bitbucket_approve_pr(
+    repo: Annotated[str, typer.Argument(help="Repository slug")],
+    pr_id: Annotated[int, typer.Argument(help="Pull request ID")],
+) -> None:
+    """Approve a pull request (signals it's good to merge, without merging)."""
+    bb = _bb(_resolve_repo(repo))
+    bb.approve_pull_request(repo, pr_id)
+    console.print(f"[green]✓[/green] Approved PR #{pr_id}")
+
+
+@bitbucket_app.command("unapprove")
+def bitbucket_unapprove_pr(
+    repo: Annotated[str, typer.Argument(help="Repository slug")],
+    pr_id: Annotated[int, typer.Argument(help="Pull request ID")],
+) -> None:
+    """Remove your approval from a pull request."""
+    bb = _bb(_resolve_repo(repo))
+    bb.unapprove_pull_request(repo, pr_id)
+    console.print(f"[green]✓[/green] Removed approval from PR #{pr_id}")
+
+
 @bitbucket_app.command("comment")
 def bitbucket_add_comment(
     repo: Annotated[str, typer.Argument(help="Repository slug")],
