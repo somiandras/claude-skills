@@ -133,6 +133,10 @@ bitbucket-api update-pr data-importer 123 --description "## Summary\nSingle-line
 # newlines render as literal \n in the PR otherwise.
 bitbucket-api update-pr data-importer 123 --description-file /tmp/pr-body.md
 
+# Approve — signals the PR is good to merge, without merging it
+bitbucket-api approve data-importer 123
+bitbucket-api unapprove data-importer 123    # Remove your approval
+
 # Merge (deletes the source branch by default; --no-close keeps it)
 bitbucket-api merge data-importer 123
 bitbucket-api merge data-importer 123 --strategy squash
