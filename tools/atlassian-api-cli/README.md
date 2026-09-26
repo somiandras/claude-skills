@@ -19,9 +19,12 @@ uv tool install /path/to/claude-skills/tools/atlassian-api-cli
 
 ## Configure
 
-Non-secret IDs live in `$XDG_CONFIG_HOME/atlassian-cli/config.yaml`
-(default `~/.config/atlassian-cli/config.yaml`). Credentials come from the
-environment: `ATLASSIAN_EMAIL`, `JIRA_API_TOKEN`, `BITBUCKET_API_TOKEN`.
+IDs live in `$XDG_CONFIG_HOME/atlassian-cli/config.yaml`
+(default `~/.config/atlassian-cli/config.yaml`). Each org can hold its own
+credentials (`email`, `jira_api_token`, `bitbucket_api_token`); any left out
+fall back to the environment: `ATLASSIAN_EMAIL`, `JIRA_API_TOKEN`,
+`BITBUCKET_API_TOKEN`. If the file holds tokens, `chmod 600` it;
+`config show` masks them.
 
 ```bash
 atlassian-api config init     # write a blank template

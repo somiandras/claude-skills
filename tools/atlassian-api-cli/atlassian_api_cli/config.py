@@ -1,11 +1,12 @@
 """Config loading for the Atlassian CLI.
 
-All non-secret identifiers (cloud IDs, project/board/issue-type/transition IDs,
-Bitbucket workspace, repo slugs, dest branches) live in a single YAML file at
+All identifiers (cloud IDs, project/board/issue-type/transition IDs, Bitbucket
+workspace, repo slugs, dest branches) live in a single YAML file at
 ``$XDG_CONFIG_HOME/atlassian-cli/config.yaml`` (default
-``~/.config/atlassian-cli/config.yaml``). Credentials are NOT stored here —
-they come from the environment (ATLASSIAN_EMAIL, JIRA_API_TOKEN,
-BITBUCKET_API_TOKEN).
+``~/.config/atlassian-cli/config.yaml``). Each org may also carry its own
+credentials (``email``, ``jira_api_token``, ``bitbucket_api_token``); any that
+are left out fall back to the ATLASSIAN_EMAIL, JIRA_API_TOKEN and
+BITBUCKET_API_TOKEN environment variables.
 
 The config supports multiple orgs (Atlassian sites + Bitbucket workspaces).
 Commands auto-route to an org by JIRA ticket prefix or Bitbucket repo slug; an
@@ -17,7 +18,7 @@ import os
 from pathlib import Path
 
 import yaml
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, SecretStr, ValidationError
 
 
 class ConfigError(Exception):
@@ -47,6 +48,9 @@ class OrgConfig(BaseModel):
     bitbucket_workspace: str
     account_id: str
     sprint_field: str
+    email: str | None = None
+    jira_api_token: SecretStr | None = None
+    bitbucket_api_token: SecretStr | None = None
     projects: dict[str, ProjectConfig] = {}
     repos: dict[str, RepoConfig] = {}
 
@@ -152,9 +156,10 @@ def load_config() -> Config:
 
 
 CONFIG_TEMPLATE = """\
-# atlassian-cli config — non-secret IDs only.
-# Credentials come from the environment, never this file:
+# atlassian-cli config.
+# Per-org credentials are optional; any left out fall back to the environment:
 #   ATLASSIAN_EMAIL, JIRA_API_TOKEN, BITBUCKET_API_TOKEN
+# If you put tokens here, keep this file readable only by you (chmod 600).
 #
 # Commands auto-route to an org by JIRA ticket prefix or Bitbucket repo slug.
 # default_org covers commands with no prefix/slug to route by; --org overrides.
@@ -167,6 +172,9 @@ orgs: {}
   #   bitbucket_workspace: ""          # Bitbucket workspace slug
   #   account_id: ""                   # your Atlassian account ID (default assignee)
   #   sprint_field: customfield_10020
+  #   email: ""                        # Atlassian account email
+  #   jira_api_token: ""               # scoped Jira API token
+  #   bitbucket_api_token: ""          # Bitbucket API token
   #   projects:
   #     ABC:
   #       project_id: ""               # numeric JIRA project ID
