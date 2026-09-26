@@ -3,7 +3,7 @@
 This module provides direct Bitbucket REST API access for pull request
 and repository operations.
 
-Environment variables required:
+Environment variables (fallback when no credentials are passed in):
     ATLASSIAN_EMAIL: Your Atlassian account email
     BITBUCKET_API_TOKEN: App password from https://bitbucket.org/account/settings/app-passwords/
 

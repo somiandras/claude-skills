@@ -1,6 +1,7 @@
 """CLI interface for Atlassian API operations."""
 
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -9,6 +10,7 @@ from typing import Annotated, Any
 import click
 import typer
 import yaml
+from pydantic import SecretStr
 from rich import print as rprint
 from rich.console import Console
 from rich.table import Table
@@ -143,12 +145,36 @@ def _project(org: OrgConfig, prefix: str) -> ProjectConfig:
         raise typer.Exit(1) from exc
 
 
+def _credential(configured: str | SecretStr | None, key: str, env_var: str) -> str:
+    """The org's configured value, else the env var; clean CLI exit if neither is set."""
+    if isinstance(configured, SecretStr):
+        configured = configured.get_secret_value()
+    value = configured or os.environ.get(env_var)
+    if not value:
+        console.print(
+            f"[red]No '{key}' in the org config and {env_var} is not set.[/red]"
+        )
+        raise typer.Exit(1)
+    return value
+
+
 def _jira(org: OrgConfig) -> JiraAPI:
-    return JiraAPI(cloud_id=org.cloud_id, sprint_field=org.sprint_field)
+    return JiraAPI(
+        cloud_id=org.cloud_id,
+        sprint_field=org.sprint_field,
+        email=_credential(org.email, "email", "ATLASSIAN_EMAIL"),
+        api_token=_credential(org.jira_api_token, "jira_api_token", "JIRA_API_TOKEN"),
+    )
 
 
 def _bb(org: OrgConfig) -> BitbucketAPI:
-    return BitbucketAPI(workspace=org.bitbucket_workspace)
+    return BitbucketAPI(
+        workspace=org.bitbucket_workspace,
+        email=_credential(org.email, "email", "ATLASSIAN_EMAIL"),
+        api_token=_credential(
+            org.bitbucket_api_token, "bitbucket_api_token", "BITBUCKET_API_TOKEN"
+        ),
+    )
 
 
 # An Atlassian cloud accountId is a 24-char hex string or a "<realm>:<uuid>"
@@ -1391,9 +1417,9 @@ def config_init(
 
 @config_app.command("show")
 def config_show() -> None:
-    """Print the resolved, validated config."""
+    """Print the resolved, validated config, with tokens masked."""
     cfg = _load()
-    console.print(yaml.safe_dump(cfg.model_dump(), sort_keys=False))
+    console.print(yaml.safe_dump(cfg.model_dump(mode="json"), sort_keys=False))
 
 
 @config_app.command("path")

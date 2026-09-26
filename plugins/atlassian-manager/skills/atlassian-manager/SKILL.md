@@ -25,16 +25,20 @@ that's the fix. Then bootstrap the config below with `atlassian-api config init`
 
 ## Configuration
 
-All non-secret IDs (cloud IDs, project keys, board/issue-type/transition IDs,
-Bitbucket workspace, repo slugs, dest branches) live in a single config file at
+All IDs (cloud IDs, project keys, board/issue-type/transition IDs, Bitbucket
+workspace, repo slugs, dest branches) live in a single config file at
 `$XDG_CONFIG_HOME/atlassian-cli/config.yaml` (default
-`~/.config/atlassian-cli/config.yaml`). Credentials are **not** in the file —
-set them in the environment (or `.env`): `ATLASSIAN_EMAIL`, `JIRA_API_TOKEN`,
+`~/.config/atlassian-cli/config.yaml`). Each org can hold its own credentials
+(`email`, `jira_api_token`, `bitbucket_api_token`); any left out fall back to
+the environment variables `ATLASSIAN_EMAIL`, `JIRA_API_TOKEN`,
 `BITBUCKET_API_TOKEN`.
+
+The file may contain tokens: **never read it directly** — use
+`atlassian-api config show`, which masks them.
 
 | Command | Purpose |
 |---------|---------|
-| `atlassian-api config show` | Print the resolved config (all IDs/values) |
+| `atlassian-api config show` | Print the resolved config (tokens masked) |
 | `atlassian-api config path` | Print the config file location |
 | `atlassian-api config init` | Write a blank template (`--force` to overwrite) |
 
@@ -174,7 +178,7 @@ Available via `from atlassian_api_cli import JiraAPI, BitbucketAPI` for complex 
 
 | Error | Solution |
 |-------|----------|
-| `KeyError: 'ATLASSIAN_EMAIL'` | Set environment variables |
+| `No '<key>' in the org config and <ENV_VAR> is not set` | Add the credential to the org in the config file, or set the environment variable |
 | 401 Unauthorized | Check API token validity and scopes |
 | 404 Not Found | Verify issue key or PR ID |
 | 429 Rate Limited | Wait and retry |
