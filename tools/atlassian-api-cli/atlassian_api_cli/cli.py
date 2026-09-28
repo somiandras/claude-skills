@@ -127,6 +127,16 @@ def _resolve_context() -> OrgConfig:
     return org
 
 
+def _description_text(description: str | None, description_file: Path | None) -> str | None:
+    """The description from --description or --description-file; clean CLI exit if both are given."""
+    if description is not None and description_file is not None:
+        console.print(
+            "[red]Error:[/red] Provide either --description or --description-file, not both"
+        )
+        raise typer.Exit(1)
+    return description_file.read_text() if description_file is not None else description
+
+
 def _find_project(org: OrgConfig, prefix: str) -> ProjectConfig:
     """Look up a project in an org by prefix (case-insensitive)."""
     upper = prefix.upper()
@@ -516,7 +526,7 @@ def jira_create_link(
     outward_issue: Annotated[str, typer.Argument(help="Outward issue key (e.g., DA-1234 'blocks' DA-5678)")],
     link_type: Annotated[str, typer.Argument(help="Link type name (e.g., Blocks, Relates, Duplicate)")],
     inward_issue: Annotated[str, typer.Argument(help="Inward issue key")],
-    comment: Annotated[str | None, typer.Option("--comment", "-c", help="Optional comment on outward issue")] = None,
+    comment: Annotated[str | None, typer.Option("--comment", "-c", help="Optional comment added with the link")] = None,
 ) -> None:
     """Link two Jira issues. Reads as: <outward> <link_type> <inward>."""
     jira = _jira(_resolve_prefix(get_project_key(outward_issue)))
@@ -741,6 +751,13 @@ def jira_create_issue(
     description: Annotated[
         str | None, typer.Option("--description", "-d", help="Issue description")
     ] = None,
+    description_file: Annotated[
+        Path | None,
+        typer.Option(
+            "--description-file",
+            help="Read issue description from a file (avoids shell newline escaping)",
+        ),
+    ] = None,
     assignee: Annotated[
         str | None,
         typer.Option(
@@ -756,6 +773,7 @@ def jira_create_issue(
     ] = None,
 ) -> None:
     """Create a new Jira issue."""
+    issue_description = _description_text(description, description_file)
     jira = _jira(_resolve_prefix(project))
     label_list = (
         [lbl.strip() for lbl in labels.split(",") if lbl.strip()] if labels else None
@@ -764,7 +782,7 @@ def jira_create_issue(
         project_key=project,
         issue_type=issue_type,
         summary=summary,
-        description=description,
+        description=issue_description,
         assignee_account_id=_resolve_assignee(jira, assignee) if assignee else None,
         labels=label_list,
         parent_key=parent,
@@ -780,6 +798,13 @@ def jira_update_issue(
     ] = None,
     description: Annotated[
         str | None, typer.Option("--description", "-d", help="New description")
+    ] = None,
+    description_file: Annotated[
+        Path | None,
+        typer.Option(
+            "--description-file",
+            help="Read new description from a file (avoids shell newline escaping)",
+        ),
     ] = None,
     labels: Annotated[
         str | None,
@@ -800,12 +825,13 @@ def jira_update_issue(
 ) -> None:
     """Update an existing issue's fields."""
     fields: dict[str, Any] = {}
+    new_description = _description_text(description, description_file)
     jira = _jira(_resolve_prefix(get_project_key(issue_key)))
 
     if summary is not None:
         fields["summary"] = summary
-    if description is not None:
-        fields["description"] = description
+    if new_description is not None:
+        fields["description"] = new_description
     if labels is not None:
         fields["labels"] = [lbl.strip() for lbl in labels.split(",") if lbl.strip()]
     if assignee is not None:
@@ -815,7 +841,7 @@ def jira_update_issue(
 
     if not fields:
         console.print(
-            "[yellow]No fields to update. Use --summary, --description, --labels, --assignee, or --priority.[/yellow]"
+            "[yellow]No fields to update. Use --summary, --description(-file), --labels, --assignee, or --priority.[/yellow]"
         )
         raise typer.Exit(1)
 
@@ -977,15 +1003,7 @@ def bitbucket_create_pr(
     Automatically transitions linked JIRA ticket (extracted from branch name
     or title) to Review status unless --no-transition is specified.
     """
-    if description is not None and description_file is not None:
-        console.print(
-            "[red]Error:[/red] Provide either --description or --description-file, not both"
-        )
-        raise typer.Exit(1)
-
-    pr_description = (
-        description_file.read_text() if description_file is not None else description
-    )
+    pr_description = _description_text(description, description_file)
 
     org = _resolve_repo(repo)
 
@@ -1050,15 +1068,7 @@ def bitbucket_update_pr(
     Prefer --description-file for multi-line descriptions: passing newlines
     inline via the shell tends to leave literal backslash-n in the rendered PR.
     """
-    if description is not None and description_file is not None:
-        console.print(
-            "[red]Error:[/red] Provide either --description or --description-file, not both"
-        )
-        raise typer.Exit(1)
-
-    new_description = (
-        description_file.read_text() if description_file is not None else description
-    )
+    new_description = _description_text(description, description_file)
 
     changed_fields = []
     if title is not None:

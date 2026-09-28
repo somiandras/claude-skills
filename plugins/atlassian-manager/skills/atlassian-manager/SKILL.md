@@ -80,6 +80,7 @@ jira-api create-issue "Title" --project COL --type Feature
 
 # Update
 jira-api update DA-1234 --summary "..." --description "..." --labels "..." --assignee "..." --priority "High"
+jira-api update DA-1234 --description-file /tmp/desc.md   # Multi-line description from a file (also on create-issue)
 
 # Assignees — no external lookup needed (token needs the read:jira-user scope)
 jira-api whoami                            # Your account ID (for "assign to me")

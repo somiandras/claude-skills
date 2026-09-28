@@ -566,12 +566,15 @@ class JiraAPI:
             inward_issue: Key of the issue on the inward side of the link.
             outward_issue: Key of the issue on the outward side.
             link_type: Link type name (e.g., "Blocks", "Relates", "Duplicate").
-            comment: Optional comment to add to the outward issue.
+            comment: Optional comment to add with the link.
         """
+        # The create-link endpoint's payload keys are the reverse of the
+        # relationship it stores: the issue sent as "inwardIssue" is the one
+        # that gets the outward description (e.g. "blocks").
         data: dict[str, Any] = {
             "type": {"name": link_type},
-            "inwardIssue": {"key": inward_issue},
-            "outwardIssue": {"key": outward_issue},
+            "inwardIssue": {"key": outward_issue},
+            "outwardIssue": {"key": inward_issue},
         }
         if comment:
             data["comment"] = {"body": comment}
