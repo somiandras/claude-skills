@@ -1143,6 +1143,17 @@ def bitbucket_merge_pr(
     console.print(f"[green]✓[/green] Merged PR #{pr.id}: {pr.title}")
 
 
+@bitbucket_app.command("decline")
+def bitbucket_decline_pr(
+    repo: Annotated[str, typer.Argument(help="Repository slug")],
+    pr_id: Annotated[int, typer.Argument(help="Pull request ID")],
+) -> None:
+    """Decline a pull request (closes it without merging)."""
+    bb = _bb(_resolve_repo(repo))
+    pr = bb.decline_pull_request(repo, pr_id)
+    console.print(f"[green]✓[/green] Declined PR #{pr.id}: {pr.title}")
+
+
 @bitbucket_app.command("approve")
 def bitbucket_approve_pr(
     repo: Annotated[str, typer.Argument(help="Repository slug")],
