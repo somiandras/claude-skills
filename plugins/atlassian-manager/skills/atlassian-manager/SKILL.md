@@ -147,6 +147,9 @@ bitbucket-api merge data-importer 123
 bitbucket-api merge data-importer 123 --strategy squash
 bitbucket-api merge data-importer 123 --no-close
 
+# Decline — closes the PR without merging
+bitbucket-api decline data-importer 123
+
 # Comments
 bitbucket-api comment data-importer 123 "Comment text"
 bitbucket-api inline-comment data-importer 123 "Needs null check" --file src/utils.py --line 42
