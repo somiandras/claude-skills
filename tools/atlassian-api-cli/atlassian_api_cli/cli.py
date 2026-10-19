@@ -1360,6 +1360,18 @@ def bitbucket_unresolve_comment(
     console.print(f"[green]✓[/green] Unresolved comment {comment_id} on PR #{pr_id}")
 
 
+@bitbucket_app.command("delete-comment")
+def bitbucket_delete_comment(
+    repo: Annotated[str, typer.Argument(help="Repository slug")],
+    pr_id: Annotated[int, typer.Argument(help="Pull request ID")],
+    comment_id: Annotated[int, typer.Argument(help="Comment ID to delete")],
+) -> None:
+    """Delete a comment on a pull request."""
+    bb = _bb(_resolve_repo(repo))
+    bb.delete_pr_comment(repo, pr_id, comment_id)
+    console.print(f"[green]✓[/green] Deleted comment {comment_id} on PR #{pr_id}")
+
+
 @bitbucket_app.command("branches")
 def bitbucket_list_branches(
     repo: Annotated[str, typer.Argument(help="Repository slug")],

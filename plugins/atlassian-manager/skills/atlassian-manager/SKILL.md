@@ -159,6 +159,7 @@ bitbucket-api reply-comment data-importer 123 456 "Fixed"
 bitbucket-api comments data-importer 123              # All comments
 bitbucket-api comments data-importer 123 --active     # Unresolved only
 bitbucket-api resolve-comment data-importer 123 456    # Only inline/diff comments can be resolved
+bitbucket-api delete-comment data-importer 123 456     # Permanent — cannot be undone
 
 # Branches
 bitbucket-api branches data-importer

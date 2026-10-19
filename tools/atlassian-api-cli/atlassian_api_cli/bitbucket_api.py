@@ -505,6 +505,22 @@ class BitbucketAPI:
         path = f"/repositories/{self.workspace}/{repo_slug}/pullrequests/{pr_id}/comments/{comment_id}/resolve"
         self._request("DELETE", path)
 
+    def delete_pr_comment(
+        self,
+        repo_slug: str,
+        pr_id: int,
+        comment_id: int,
+    ) -> None:
+        """Delete a comment on a pull request.
+
+        Args:
+            repo_slug: Repository slug.
+            pr_id: Pull request ID.
+            comment_id: Comment ID to delete.
+        """
+        path = f"/repositories/{self.workspace}/{repo_slug}/pullrequests/{pr_id}/comments/{comment_id}"
+        self._request("DELETE", path)
+
     def get_repository(self, repo_slug: str) -> dict[str, Any]:
         """Get repository information.
 
