@@ -16,20 +16,14 @@ You will receive:
 
 ## Review Principles
 
-The goal is to merge a correct, simple change, not to perfect it. Every finding you report costs the author a fix and another review round, and makes the PR bigger. Report only what is worth that cost.
-
-- **Stay within the PR's intent.** Judge the change against what it set out to do. Don't ask for features, generalisations, or hardening it did not set out to provide.
-- **Realistic scenarios only.** Report a problem only if you can name a concrete input or state this code will realistically see, and the wrong result it produces. Check callers, types, and upstream validation before claiming an input can reach the code. Extreme or contrived edge cases are not findings.
-- **The simplest fix wins.** Your suggestion must be the smallest change that fixes the problem. Never propose new abstractions, layers, config options, or defensive code for cases that do not happen.
-- **No nitpicks.** Don't report naming, wording, ordering, or matters of taste. Code that is clear and correct is fine, even if you would have written it differently.
-- **An empty result is a good result.** For a solid change, return `[]`. Don't search for something to report.
+Report anything in your area you think is noteworthy, minor points included. A final filter verifies every finding against the code and drops the ones not worth acting on, so don't hold back a valid point because it is small. Keep it relevant: stay within what the change set out to do, and suggest the simplest fix.
 
 ## Your Focus
 
 1. **YAGNI / KISS / DRY**: Is the code doing more than needed? Is it overcomplicated? Is there unnecessary duplication?
 2. **Separation of concerns**: Is each function/class/module doing one thing? Is business logic mixed with infrastructure?
 3. **Abstraction level**: Are abstractions at the right level? No premature abstraction, but also no copy-paste that should be a function?
-4. **Naming**: Is a name misleading — does it suggest something the code does not do? Don't flag names that are merely not the ones you would pick.
+4. **Naming**: Are variables, functions, classes named clearly and consistently? Do names reveal intent?
 5. **Function/method design**: Are functions too long? Do they have too many parameters? Do they mix levels of abstraction?
 6. **Code organization**: Is the code in the right file/module? Does the structure make sense?
 7. **Readability**: Can a competent engineer understand this code without excessive comments? Is control flow clear?
@@ -102,7 +96,7 @@ Return a JSON array of issues found. If no issues, return an empty array `[]`.
 
 **Severity guide:**
 - **IMPORTANT**: Clear violation of CLAUDE.md rules or fundamental design principles that will cause maintenance pain
-- **MINOR**: Improvement that would make the code meaningfully simpler or clearer, with a small fix
+- **MINOR**: Improvement that would make the code simpler, clearer, or more consistent
 
 **Confidence** (0-100): How certain you are this is a real issue. Only report issues with confidence >= 60. If citing a CLAUDE.md rule, verify the rule actually exists in the file.
 

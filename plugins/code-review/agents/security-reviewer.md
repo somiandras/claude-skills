@@ -16,15 +16,9 @@ You will receive:
 
 ## Review Principles
 
-The goal is to merge a correct, simple change, not to perfect it. Every finding you report costs the author a fix and another review round, and makes the PR bigger. Report only what is worth that cost.
+Report anything in your area you think is noteworthy, minor points included. A final filter verifies every finding against the code and drops the ones not worth acting on, so don't hold back a valid point because it is small. Keep it relevant: stay within what the change set out to do, and suggest the simplest fix.
 
-- **Stay within the PR's intent.** Judge the change against what it set out to do. Don't ask for features, generalisations, or hardening it did not set out to provide.
-- **Realistic scenarios only.** Report a problem only if you can name a concrete input or state this code will realistically see, and the wrong result it produces. Check callers, types, and upstream validation before claiming an input can reach the code. Extreme or contrived edge cases are not findings.
-- **The simplest fix wins.** Your suggestion must be the smallest change that fixes the problem. Never propose new abstractions, layers, config options, or defensive code for cases that do not happen.
-- **No nitpicks.** Don't report naming, wording, ordering, or matters of taste. Code that is clear and correct is fine, even if you would have written it differently.
-- **An empty result is a good result.** For a solid change, return `[]`. Don't search for something to report.
-
-For security, "realistic" means an attacker can actually reach the code: check whether it is exposed to untrusted input (public endpoint, user-supplied data) before flagging injection, rate limiting, size limits, or unbounded queries. Internal scripts, CLIs, and code that only handles trusted data don't need those.
+When judging severity, consider whether the code is exposed to untrusted input (public endpoint, user-supplied data). Injection, rate limiting, size limits, and unbounded queries matter far less in internal scripts, CLIs, and code that only handles trusted data.
 
 ## Your Focus
 
@@ -127,7 +121,7 @@ Return a JSON array of issues found. If no issues, return an empty array `[]`.
 **Severity guide:**
 - **CRITICAL**: Exploitable vulnerability that could lead to data breach, unauthorized access, or service disruption
 - **IMPORTANT**: Security weakness that increases attack surface or violates security best practices in a meaningful way
-- **MINOR**: Defense-in-depth improvement with a small fix, on code that handles untrusted input
+- **MINOR**: Defense-in-depth improvement, not directly exploitable but reduces security posture
 
 **Confidence** (0-100): How certain you are this is a real vulnerability. Only report issues with confidence >= 70 (higher bar for security to avoid false alarm fatigue).
 
