@@ -156,7 +156,7 @@ bitbucket-api inline-comment data-importer 123 "Needs null check" --file src/uti
 # --line is the destination-side (post-change) line — use for added/context lines.
 # For a removed line, use --old-line (source side). Pass both for a changed line.
 bitbucket-api reply-comment data-importer 123 456 "Fixed"
-bitbucket-api comments data-importer 123              # All comments
+bitbucket-api comments data-importer 123              # All comments except deleted ones
 bitbucket-api comments data-importer 123 --active     # Unresolved only
 bitbucket-api resolve-comment data-importer 123 456    # Only inline/diff comments can be resolved
 bitbucket-api delete-comment data-importer 123 456     # Permanent — cannot be undone

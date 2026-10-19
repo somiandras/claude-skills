@@ -1281,9 +1281,10 @@ def bitbucket_list_comments(
     raw: Annotated[bool, typer.Option("--raw", "-r", help="Output raw JSON")] = False,
     active: Annotated[bool, typer.Option("--active", "-a", help="Only show unresolved comments")] = False,
 ) -> None:
-    """List comments on a pull request."""
+    """List comments on a pull request (deleted comments are omitted)."""
     bb = _bb(_resolve_repo(repo))
-    comments = bb.get_pr_comments(repo, pr_id)
+    # Bitbucket keeps deleted comments in the response, flagged with deleted=true.
+    comments = [c for c in bb.get_pr_comments(repo, pr_id) if not c.get("deleted")]
 
     if active:
         comments = [c for c in comments if c.get("resolution") is None]
