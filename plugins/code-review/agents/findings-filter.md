@@ -35,7 +35,7 @@ Drop a finding when any of these holds:
 - **It is wrong.** The code already handles the case, the reviewer misread the logic, or the claimed input cannot reach this code (check the callers and types).
 - **The scenario is hypothetical.** It needs inputs, states, or concurrency the system does not produce in practice, or it guards an invariant that is already guaranteed elsewhere (type system, validation at the boundary, database constraint, framework).
 - **It is outside the change.** It concerns unchanged code, a pre-existing gap, or a follow-up feature the PR did not set out to build.
-- **It is a NITPICK.** Drop every NITPICK — naming, wording of comments, docstrings or log messages, ordering, formatting, "consider extracting", "could be more idiomatic".
+- **It is a nitpick**, whatever severity it carries — naming, wording of comments, docstrings or log messages, ordering, formatting, "consider extracting", "could be more idiomatic".
 - **It is an unbacked preference.** A style or design opinion not required by a CLAUDE.md rule or a clear, concrete maintainability problem in this diff.
 - **It asks for speculative robustness.** Extra validation, retries, defensive checks, configurability, or abstraction for needs that do not exist yet (YAGNI).
 - **It asks for test refinement.** Drop requests to add tests for trivial code or for edge cases that are not realistic bug paths, to split, rename, reorganise, or parametrise existing tests, to strengthen assertions that already catch the regression, or to add coverage for paths that existing tests already exercise. Keep a test finding only when critical logic changed in this diff has no test that would catch a regression in it, or an existing test is broken or asserts the wrong thing.
