@@ -18,6 +18,7 @@ Record `DIFF_SOURCE` (pr/branch/local), `PR_REF` (if applicable), and `REPO_ROOT
 1. Get the diff content
 2. Find CLAUDE.md files: root + any in directories touched by the diff
 3. Get PR description or commit messages for intent
+4. **Re-review check (PR only):** fetch the PR's existing comments. If an earlier summary comment from this skill exists (it starts with `## Code Review:` and contains a `Reviewed commit:` line), this is a re-review. Record `PRIOR_REVIEW` = that summary comment plus the inline comments posted with it, and the replies to them. Record `CHANGED_SINCE` = `git diff <reviewed commit>..<PR head>`. If the reviewed commit is no longer reachable (force-push), use the PR's commits newer than the comment's timestamp instead.
 
 ## Step 3: Detect Frontend Code
 
@@ -58,22 +59,34 @@ A bare feature name ("the auth module", "the api app") is never acceptable — r
 
 ## Step 5: Consolidate
 
-1. Parse each agent's JSON output
+1. Parse each agent's JSON output and tag each finding with its `reviewer`
 2. Deduplicate: same file+line range → keep highest confidence, merge descriptions
 3. Filter: drop confidence < 60 (< 70 for security)
-4. Sort: CRITICAL → IMPORTANT → MINOR → NITPICK
 
-## Step 6: Terminal Summary (ALWAYS show this)
+If no findings remain, skip Step 6 — the verdict is APPROVE.
+
+## Step 6: Final Filter (ALWAYS run when findings remain)
+
+Launch one `code-review:findings-filter` agent. It is the only judge of what reaches the author: it verifies each finding against the code, drops pedantic and speculative ones, corrects severities, and sets the verdict. Its prompt MUST include:
+
+- `REPO_ROOT`, the diff, the change description / intent, and the CLAUDE.md paths (same as Step 4)
+- The consolidated findings from Step 5 as a JSON array
+- For re-reviews: `PRIOR_REVIEW` and `CHANGED_SINCE` from Step 2
+- The search-scoping rule from Step 4, verbatim
+
+Use its `kept` list, `dropped` list, and `verdict` as-is for Steps 7 and 8. Do not re-add dropped findings or change its severities.
+
+## Step 7: Terminal Summary (ALWAYS show this)
 
 Always display a concise summary in the terminal, even if details are posted to a PR.
 
-**If issues found:**
+**If issues kept:**
 
 ```
 ## Code Review: [title]
 
 Reviewers: logic, style, tests, security, logging[, frontend]
-Found: X blocking, Y suggestions
+Kept: X blocking, Y suggestions (Z dropped by the final filter)
 
 ### Blocking (CRITICAL / IMPORTANT)
 
@@ -81,32 +94,40 @@ Found: X blocking, Y suggestions
 |---|-----|----------|------|-------|
 | 1 | CRITICAL | logic | path:L42 | brief description |
 
-### Suggestions (MINOR / NITPICK)
+### Suggestions (MINOR)
 
 | # | Sev | Reviewer | File | Issue |
 |---|-----|----------|------|-------|
 | 1 | MINOR | style | path:L10 | brief description |
 
+### Dropped by the final filter
+
+| Reviewer | File | Issue | Reason |
+|----------|------|-------|--------|
+| test | path:L80 | brief description | brief reason |
+
 Verdict: REQUEST CHANGES / APPROVE WITH SUGGESTIONS / APPROVE
 ```
 
-**If no issues:**
+**If no issues kept:**
 
 ```
 ## Code Review: [title]
 
 Reviewers: logic, style, tests, security, logging[, frontend]
-No issues found. Verdict: APPROVE
+No issues found (Z dropped by the final filter). Verdict: APPROVE
 ```
 
-Keep the terminal summary compact — one-line issue descriptions, no suggestions column. The detailed suggestions go into PR comments.
+Keep the terminal summary compact — one-line issue descriptions, no suggestions column. The detailed suggestions go into PR comments. The dropped table appears only in the terminal, never on the PR.
 
-## Step 7: Post to PR (AUTOMATIC when reviewing a PR)
+## Step 8: Post to PR (AUTOMATIC when reviewing a PR)
 
 **When `DIFF_SOURCE` is `pr`, ALWAYS post comments immediately — do NOT ask for confirmation.** This is the whole point of reviewing a PR.
 
-1. **Summary comment** on the PR with the full review (including suggestions)
-2. **Inline comments** for each CRITICAL and IMPORTANT issue on the specific file+line
+Post only the findings the final filter kept.
+
+1. **Summary comment** on the PR with the full review (including suggestions). It must start with `## Code Review:` and include a line `Reviewed commit: <full SHA of the PR head>` — Step 2 uses both to detect re-reviews.
+2. **Inline comments** for each CRITICAL and IMPORTANT issue on the specific file+line, including its failure scenario
 3. Use the appropriate tool per project CLAUDE.md (`gh`, `bitbucket-api`, `atlassian-manager` skill, etc.)
 4. **For multi-line comments**: Write content to a temp file, then pass via `--content-file`. Example:
    ```bash
@@ -122,9 +143,9 @@ If posting fails, inform the user and show the full detailed review in the termi
 
 ## Rules
 
-- All agents run in parallel — never sequential
+- All reviewer agents run in parallel — never sequential. The final filter runs once, after all of them finish
 - Never fabricate issues — empty results from an agent are fine
 - Source-agnostic — adapt to whatever VCS/platform the project uses
-- Don't second-guess agent findings — consolidate and present as-is
+- The final filter decides what reaches the author — don't add your own findings or override its decisions
 - Large diffs (> 2000 lines): warn the user and suggest smaller PRs
 - Every agent prompt carries resolved, absolute code pointers and the search-scoping rule — no vague references, no home-rooted searches
