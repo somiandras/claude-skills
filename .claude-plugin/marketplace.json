@@ -9,8 +9,8 @@
   "plugins": [
     {
       "name": "code-review",
-      "description": "Review a PR or branch diff using 6 parallel specialized reviewers (logic, style, tests, security, logging, frontend).",
-      "version": "0.1.5",
+      "description": "Review a PR or branch diff using 6 parallel specialized reviewers (logic, style, tests, security, logging, frontend) and a strict final filter that drops pedantic findings.",
+      "version": "0.2.0",
       "source": "./plugins/code-review",
       "category": "productivity"
     },

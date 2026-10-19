@@ -8,7 +8,8 @@ without per-project drift.
 
 | Plugin | What it does |
 |--------|--------------|
-| `code-review` | Review a PR or branch diff using 6 parallel specialized reviewers (logic, style, tests, security, logging, frontend). |
+| `code-review` | Review a PR or branch diff using 6 parallel specialized reviewers (logic, style, tests, security, logging, frontend) and a strict final filter that drops pedantic findings. |
+| `atlassian-manager` | Manage Jira issues and Bitbucket pull requests via the jira-api/bitbucket-api CLIs (config-driven, multi-org). Requires the atlassian-api-cli tool. |
 
 ## Local install (laptop)
 
@@ -50,13 +51,14 @@ plugins/
       code-review/
         SKILL.md                    # entry — auto-triggers on review requests
         workflow.md                 # full procedure, read on demand
-    agents/                         # 6 plugin-scoped reviewer subagents
+    agents/                         # plugin-scoped subagents
       logic-reviewer.md             # invoked as code-review:logic-reviewer
       style-reviewer.md
       test-reviewer.md
       security-reviewer.md
       logging-reviewer.md
       frontend-reviewer.md
+      findings-filter.md            # final gate over all reviewers' findings
 ```
 
 The skill auto-triggers when the user asks to review a PR / branch / diff
@@ -66,8 +68,4 @@ The skill auto-triggers when the user asks to review a PR / branch / diff
 ## Versioning
 
 Bump `version` in `marketplace.json` and the affected plugin's `plugin.json`
-together. Tag releases (`v0.1.0`) so CI can pin if needed:
-
-```yaml
-plugin_marketplaces: 'https://github.com/somiandras/claude-skills.git@v0.1.0'
-```
+together. Installs track `main`, so a push is the release — no tagging step.

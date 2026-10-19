@@ -1,6 +1,6 @@
 ---
 name: code-review
-description: Review a PR or branch diff using 6 parallel specialized reviewers (logic, style, tests, security, logging, frontend). Use when the user asks to review a PR, review code changes, or review a branch diff. Triggers on phrases like "review PR", "code review", "review this branch", "review changes".
+description: Review a PR or branch diff using 6 parallel specialized reviewers (logic, style, tests, security, logging, frontend) and a strict final filter that drops pedantic findings. Use when the user asks to review a PR, review code changes, or review a branch diff. Triggers on phrases like "review PR", "code review", "review this branch", "review changes".
 user-invocable: true
 argument-hint: "[PR reference, branch, or diff target]"
 ---

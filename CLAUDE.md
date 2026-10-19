@@ -19,7 +19,7 @@ Two-level manifest layout:
 - `plugins/<name>/agents/*.md` — plugin-scoped subagents, invoked from a skill as `subagent_type: "<plugin>:<agent-name>"` (e.g. `code-review:logic-reviewer`).
 - `tools/<name>/` — standalone CLI projects (Python `uv`) that skills depend on at runtime. Installed via `uv tool install`, not distributed by the marketplace. E.g. `tools/atlassian-api-cli` provides `jira-api`/`bitbucket-api` for the `atlassian-manager` skill.
 
-The `code-review` plugin orchestrates 6 parallel reviewer subagents (logic, style, test, security, logging, frontend) from a single skill. Frontend agent is conditional on file extensions in the diff. Agents return findings; the skill consolidates, deduplicates, prints a terminal summary, and posts PR comments when reviewing a PR.
+The `code-review` plugin orchestrates 6 parallel reviewer subagents (logic, style, test, security, logging, frontend) from a single skill, then runs one `findings-filter` agent over the consolidated findings. Frontend agent is conditional on file extensions in the diff. Agents return findings; the skill consolidates, deduplicates, filters, prints a terminal summary, and posts PR comments when reviewing a PR.
 
 ## Versioning
 
