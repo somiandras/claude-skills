@@ -1,6 +1,6 @@
 {
   "name": "code-review",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Review a PR or branch diff using 6 parallel specialized reviewers (logic, style, tests, security, logging, frontend) and a strict final filter that drops pedantic findings.",
   "author": {
     "name": "András Somi"

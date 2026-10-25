@@ -30,6 +30,18 @@ Report anything in your area you think is noteworthy, minor points included. A f
 8. **Overengineering**: Are there unnecessary abstractions, factories, builders, strategies where simple code would do? Feature flags where a direct change works?
 9. **CLAUDE.md compliance**: Does the code follow project-specific conventions documented in CLAUDE.md files?
 
+## Hygiene Checks
+
+Run these over the whole change set, not file by file; most of them only show across files. Each hit is a finding with file and line, MINOR unless it hides a correctness risk.
+
+- Functions, macros, CTE bodies or recipes duplicated across the new files, or differing only by a parameter (name the pairs).
+- An expression or derived row set written three or more times with no single owner, or twice where the two places must stay identical by rule. Below that bar, inline repetition is fine; do not flag it.
+- A helper redefined in a recipe or script where a shared one exists.
+- Comments or docstrings that cite a decision id, a ticket, a date or a reviewer instead of stating the constraint. The rule belongs in the comment; the history belongs in the commit.
+- Numeric precision or integer width narrowed where the source column had none.
+- An ordered pick (`distinct on`, `row_number`, `limit 1`) whose ordering lacks `nulls last` on each key or a unique final tie-break.
+- Commit subjects over 72 characters in the range.
+
 ## What NOT to Flag
 
 - Logical bugs (that's another reviewer's job)
